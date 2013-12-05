@@ -23,11 +23,12 @@
  */
 
 if (Function.prototype.bind == null) {
-	Function.prototype.bind = function(object) {
-		var __method = this;
+	Function.prototype.bind = function(context) {
+		var method = this;
+		var args = Array.prototype.slice.call(arguments, 1);
 		return function() {
-			return __method.apply(object, arguments);
-		}
+			return method.apply(context, args.concat(Array.prototype.slice.call(arguments)));
+		};
 	}
 }
 
