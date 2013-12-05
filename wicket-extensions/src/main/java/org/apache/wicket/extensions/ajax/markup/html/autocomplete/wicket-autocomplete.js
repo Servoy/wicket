@@ -578,18 +578,8 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     }
 
     function getPosition(obj) {
-        var leftPosition = obj.offsetLeft || 0;
-        var topPosition = obj.offsetTop || 0;
-        obj = obj.offsetParent;
-        while (obj && obj != document.documentElement && obj != document.body) {
-            topPosition += obj.offsetTop || 0;
-     		topPosition -= obj.scrollTop || 0;
-            leftPosition += obj.offsetLeft || 0;
-     		leftPosition -= obj.scrollLeft || 0;
-            obj = obj.offsetParent;
-        }
-
-        return [leftPosition,topPosition];
+       var rect = obj.getBoundingClientRect();
+       return [rect.left,rect.top];
     }
     
     function doUpdateAllChoices(resp) {
@@ -820,7 +810,9 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     			index=getStyle(obj,"z-index"); 
     		}
     		obj=obj.offsetParent;     		
-    	} while (obj && index == "auto");
+    	} while (obj && index == "inherit");
+		// auto means in default layer
+		if(index == "auto") index = 0;
     	return index;
     }
 
