@@ -42,7 +42,6 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     var selected=-1; 	// index of the currently selected item
     var elementCount=0; // number of items on the auto complete list
     var visible=0;		// is the list visible
-    var mouseactive=0;	// is mouse selection active
 	var	hidingAutocomplete=0;		// are we hiding the autocomplete list
 
 	// pointers of the browser events
@@ -76,12 +75,20 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
 	var localThrottler = new Wicket.Throttler(true);
 	var throttleDelay = cfg.throttleDelay;
 
+    function isMouseActive(){
+        var mouseactive = getAutocompleteMenu().mouseactive;
+        return mouseactive ? mouseactive : 0;
+    }
+
+    function setMouseActive(mouseactive){
+        getAutocompleteMenu().mouseactive = mouseactive;
+    }
+
     function initialize(){
     	var isShowing = false;
 		// Remove the autocompletion menu if still present from
 		// a previous call. This is required to properly register
-		// the mouse event handler again (using the new stateful 'mouseactive'
-		// variable which just gets created)
+		// the mouse event handler again
         var choiceDiv=document.getElementById(getMenuId());
         if (choiceDiv != null) {
         	isShowing = choiceDiv.showingAutocomplete;
@@ -100,14 +107,14 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
         objonchangeoriginal=obj.onchange; 
         obj.onchange=function(event){
         	event = Wicket.fixEvent(event);
-      		if(mouseactive==1)return false;
+      		if(isMouseActive()==1)return false;
       		if(typeof objonchangeoriginal=="function") return objonchangeoriginal.apply(this,[event]);
       	}
         objonchange=obj.onchange;
         
         Wicket.Event.add(obj,'blur',function(event){      		
         	event = Wicket.fixEvent(event);
-    		if(mouseactive==1){
+    		if(isMouseActive()==1){
                 ignoreOneFocusGain = true;
     			Wicket.$(elementId).focus();
     			return killEvent(event);
@@ -117,11 +124,11 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
                 
       	obj.onfocus=function(event){
         	event = Wicket.fixEvent(event);
-            if (mouseactive==1) {
+            if (isMouseActive()==1) {
                 ignoreOneFocusGain = false;
                 return killEvent(event);
             }
-            var input = event.target;
+            var input = event.target ? event.target : event.srcElement; 
             if (!ignoreOneFocusGain && (cfg.showListOnFocusGain || (cfg.showListOnEmptyInput && (input.value==null || input.value==""))) && visible==0) {
             	getAutocompleteMenu().showingAutocomplete = true;
                 if (cfg.showCompleteListOnFocusGain) {
@@ -179,7 +186,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
                         hideAutoComplete();
                         hidingAutocomplete = 1;
                     }
-                    mouseactive = 0;
+                    setMouseActive(0);
                     if (typeof objonkeydown=="function") return objonkeydown.apply(this,[event]);
                     return true;
                 break;
@@ -235,8 +242,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     {
     	// Remove the autocompletion menu if still present from
 		// a previous call. This is required to properly register
-		// the mouse event handler again (using the new stateful 'mouseactive'
-		// variable which just gets created)
+		// the mouse event handler again
         var choiceDiv=document.getElementById(getMenuId());
         if (choiceDiv != null) {
             choiceDiv.parentNode.parentNode.removeChild(choiceDiv.parentNode);
@@ -320,8 +326,8 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
             
             
             // WICKET-1350/WICKET-1351
-            container.onmouseout=function() {mouseactive=0;};
-            container.onmousemove=function() {mouseactive=1;};
+            container.onmouseout=function() {setMouseActive(0);};
+            container.onmousemove=function() {setMouseActive(1);};
         }
 
 
@@ -437,7 +443,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     function hideAutoComplete(){
         visible=0;
         setSelected(-1);
-        mouseactive=0;
+        setMouseActive(0);
         var container = getAutocompleteContainer();
         if (container)
         {
@@ -618,7 +624,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
 
             var clickFunc = function(event) {
 	        	event = Wicket.fixEvent(event);
-                mouseactive = 0;
+                setMouseActive(0);
                 var value = getSelectedValue();
                 var input = wicketGet(elementId);
                 if(value = handleSelection(value)) {
