@@ -1425,7 +1425,7 @@ public abstract class Session implements IClusterable
 	/**
 	 * @return The current thread dirty objects list
 	 */
-	List<IClusterable> getDirtyObjectsList()
+	public List<IClusterable> getDirtyObjectsList()
 	{
 		List<IClusterable> list = dirtyObjects.get();
 		if (list == null)
@@ -1434,6 +1434,66 @@ public abstract class Session implements IClusterable
 			dirtyObjects.set(list);
 		}
 		return list;
+	}
+
+	/**
+	 * @return The List with Pages that are touched
+	 */
+	public final List<Page> getTouchedPages()
+	{
+		List<Page> lst = touchedPages.get();
+		if (lst == null)
+		{
+			lst = new ArrayList<Page>();
+			touchedPages.set(lst);
+		}
+		return lst;
+	}
+
+	/**
+	 * @param form
+	 * @param to
+	 */
+	public final void moveUsedPage(Thread form, Thread to)
+	{
+		if (pageMapsUsedInRequest != null)
+		{
+			synchronized (pageMapsUsedInRequest)
+			{
+				Iterator<Entry<IPageMap, PageMapsUsedInRequestEntry>> it = pageMapsUsedInRequest.entrySet()
+					.iterator();
+				while (it.hasNext())
+				{
+					Entry<IPageMap, PageMapsUsedInRequestEntry> entry = it.next();
+					if ((entry.getValue()).thread == form)
+					{
+						(entry.getValue()).thread = to;
+					}
+				}
+			}
+		}
+	}
+
+	protected void releaseLocks()
+	{
+		if (pageMapsUsedInRequest != null)
+		{
+			synchronized (pageMapsUsedInRequest)
+			{
+				Thread t = Thread.currentThread();
+				Iterator<Entry<IPageMap, PageMapsUsedInRequestEntry>> it = pageMapsUsedInRequest.entrySet()
+					.iterator();
+				while (it.hasNext())
+				{
+					Entry<IPageMap, PageMapsUsedInRequestEntry> entry = it.next();
+					if ((entry.getValue()).thread == t)
+					{
+						it.remove();
+					}
+				}
+				pageMapsUsedInRequest.notifyAll();
+			}
+		}
 	}
 
 	// TODO remove after deprecation release
