@@ -51,6 +51,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
 	var objonchange;
 	var objonchangeoriginal;
 	var objonfocus;
+	var objonblur;
 	var initialElement; 
 	
 	// holds the eventual margins, padding, etc. of the menu container.
@@ -102,6 +103,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
         objonkeyup=obj.onkeyup;
         objonkeypress=obj.onkeypress;
         objonfocus=obj.onfocus;
+		objonblur=obj.onblur;
         
         // WICKET-1280
         objonchangeoriginal=obj.onchange; 
@@ -111,17 +113,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
       		if(typeof objonchangeoriginal=="function") return objonchangeoriginal.apply(this,[event]);
       	}
         objonchange=obj.onchange;
-        
-        Wicket.Event.add(obj,'blur',function(event){      		
-        	event = Wicket.fixEvent(event);
-    		if(isMouseActive()==1){
-                ignoreOneFocusGain = true;
-    			Wicket.$(elementId).focus();
-    			return killEvent(event);
-    		}
-          	window.setTimeout( hideAutoComplete, 500);
-        });	 
-                
+
       	obj.onfocus=function(event){
         	event = Wicket.fixEvent(event);
             if (isMouseActive()==1) {
@@ -141,6 +133,17 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
           	if(typeof objonfocus=="function") return objonfocus.apply(this,[event]);
         }
 
+      	obj.onblur=function(event){
+          	event = Wicket.fixEvent(event);
+    		if(isMouseActive()==1){
+			ignoreOneFocusGain = true;
+    			Wicket.$(elementId).focus();
+    			return killEvent(event);
+    		}
+          	window.setTimeout( hideAutoComplete, 500);
+          	if(typeof objonblur=="function") return objonblur.apply(this,[event]);
+        }	
+	
         obj.onkeydown=function(event){
         	event = Wicket.fixEvent(event);
             switch(wicketKeyCode(event)){
