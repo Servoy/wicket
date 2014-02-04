@@ -806,16 +806,16 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     function getOffsetParentZIndex(obj) {
     	obj=typeof obj=="string"?Wicket.$(obj):obj;
     	obj=obj.offsetParent;
-    	var index="auto"; 
+    	var index=0; 
     	do {
     		var pos=getStyle(obj,"position");    		
     		if(pos=="relative"||pos=="absolute"||pos=="fixed") {
-    			index=getStyle(obj,"z-index"); 
+    			index=new Number(getStyle(obj,"z-index")); 
     		}
-    		obj=obj.offsetParent;     		
-    	} while (obj && index == "inherit");
-		// auto means in default layer
-		if(index == "auto") index = 0;
+    		obj=obj.offsetParent;
+    	} while (obj && isNaN(index));
+
+		if(isNaN(index)) index = 0;
     	return index;
     }
 
