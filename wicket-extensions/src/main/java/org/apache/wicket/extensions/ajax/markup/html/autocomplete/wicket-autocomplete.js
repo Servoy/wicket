@@ -190,7 +190,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
                         hidingAutocomplete = 1;
                     }
                     setMouseActive(0);
-                    if (typeof objonkeydown=="function") return objonkeydown.apply(this,[event]);
+                    if (wicketKeyCode(event) != KEY_ENTER && typeof objonkeydown=="function") return objonkeydown.apply(this,[event]);
                     return true;
                 break;
                 default:
