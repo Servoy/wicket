@@ -581,7 +581,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
     }
 
     function getPosition(obj) {
-       var rect = obj.getBoundingClientRect();
+       var rect = $(obj).offset();
        return [rect.left,rect.top];
     }
     
