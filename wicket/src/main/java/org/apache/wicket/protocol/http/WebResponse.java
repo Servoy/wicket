@@ -19,6 +19,8 @@ package org.apache.wicket.protocol.http;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -39,11 +41,13 @@ import org.slf4j.LoggerFactory;
  * which: add a cookie, close the stream, encode a URL, redirect a request to another resource,
  * determine if a redirect has been issued, set the content type, set the locale and, most
  * importantly, write a String to the response output.
- * 
+ *
  * @author Jonathan Locke
  */
 public class WebResponse extends Response
 {
+	private static final Pattern LEADING_DOT_DOT_SLASH = Pattern.compile("^((\\.\\./)+)");
+
 	/** Log. */
 	private static final Logger log = LoggerFactory.getLogger(WebResponse.class);
 
@@ -66,7 +70,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Package private constructor.
-	 * 
+	 *
 	 * @param httpServletResponse
 	 *            The servlet response object
 	 */
@@ -77,7 +81,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Add a cookie to the web response
-	 * 
+	 *
 	 * @param cookie
 	 */
 	public void addCookie(final Cookie cookie)
@@ -90,7 +94,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Convenience method for clearing a cookie.
-	 * 
+	 *
 	 * @param cookie
 	 *            The cookie to set
 	 * @see WebResponse#addCookie(Cookie)
@@ -117,7 +121,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Returns the given url encoded.
-	 * 
+	 *
 	 * @param url
 	 *            The URL to encode
 	 * @return The encoded url
@@ -154,7 +158,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Gets the wrapped http servlet response object.
-	 * 
+	 *
 	 * @return The wrapped http servlet response object
 	 */
 	public final HttpServletResponse getHttpServletResponse()
@@ -180,7 +184,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Whether this response is going to redirect the user agent.
-	 * 
+	 *
 	 * @return True if this response is going to redirect the user agent
 	 */
 	@Override
@@ -189,13 +193,26 @@ public class WebResponse extends Response
 		return redirect;
 	}
 
+	private String removeLeadingDotDotSlashes(String url, StringBuilder removed)
+	{
+		Matcher matcher = LEADING_DOT_DOT_SLASH.matcher(url);
+		if (!matcher.find())
+		{
+			return url;
+		}
+
+		removed.append(matcher.group(1));
+		StringBuffer sb = new StringBuffer();
+		return matcher.appendReplacement(sb, "").appendTail(sb).toString();
+	}
+
 	/**
 	 * CLIENTS SHOULD NEVER CALL THIS METHOD FOR DAY TO DAY USE!
 	 * <p>
 	 * Redirects to the given url. Implementations should encode the URL to make sure cookie-less
 	 * operation is supported in case clients forgot.
 	 * </p>
-	 * 
+	 *
 	 * @param url
 	 *            The URL to redirect to
 	 */
@@ -207,22 +224,30 @@ public class WebResponse extends Response
 			if (httpServletResponse != null)
 			{
 				// encode to make sure no caller forgot this
-				url = httpServletResponse.encodeRedirectURL(url);
 				try
 				{
-					if (httpServletResponse.isCommitted())
-					{
-						log.error("Unable to redirect to: " + url +
-							", HTTP Response has already been committed.");
-					}
-
-					if (log.isDebugEnabled())
-					{
-						log.debug("Redirecting to " + url);
-					}
-
 					if (isAjax())
 					{
+						// Remove leading '../' sequences for encoding, some webserver
+						// implementations (tomcat) may fail because in case of an a ajax call the
+						// redirect is relative to the page url and not the current ajax http
+						// request.
+						StringBuilder dotsRemoved = new StringBuilder();
+						url = httpServletResponse.encodeRedirectURL(removeLeadingDotDotSlashes(url,
+							dotsRemoved));
+						url = dotsRemoved.toString() + url;
+
+						if (httpServletResponse.isCommitted())
+						{
+							log.error("Unable to redirect to: " + url +
+								", HTTP Response has already been committed.");
+						}
+
+						if (log.isDebugEnabled())
+						{
+							log.debug("Redirecting to " + url);
+						}
+
 						/*
 						 * By reaching this point, make sure the HTTP response status code is set to
 						 * 200, otherwise wicket-ajax.js will not process the Ajax-Location header
@@ -247,6 +272,19 @@ public class WebResponse extends Response
 					}
 					else
 					{
+
+						url = httpServletResponse.encodeRedirectURL(url);
+						if (httpServletResponse.isCommitted())
+						{
+							log.error("Unable to redirect to: " + url +
+								", HTTP Response has already been committed.");
+						}
+
+						if (log.isDebugEnabled())
+						{
+							log.debug("Redirecting to " + url);
+						}
+
 						sendRedirect(url);
 					}
 					redirect = true;
@@ -269,9 +307,9 @@ public class WebResponse extends Response
 	 * containers do not treat relative URL redirects correctly (i.e. WebSphere). If you are using
 	 * one of these containers, you can override this method and convert the relative URL to an
 	 * absolute URL before sending the redirect to the servlet container.
-	 * 
+	 *
 	 * Example of how to fix this for your buggy container (in your application):
-	 * 
+	 *
 	 * <pre>
 	 * &#064;Override
 	 * protected WebResponse newWebResponse(HttpServletResponse servletResponse)
@@ -289,7 +327,7 @@ public class WebResponse extends Response
 	 * 	};
 	 * }
 	 * </pre>
-	 * 
+	 *
 	 * @param url
 	 *            the URL to redirect to
 	 * @throws IOException
@@ -319,7 +357,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Set the content type on the response.
-	 * 
+	 *
 	 * @param mimeType
 	 *            The mime type
 	 */
@@ -364,9 +402,9 @@ public class WebResponse extends Response
 	 * element, and that element provides a mapping for the given locale, that mapping is used.
 	 * Otherwise, the mapping from locale to character encoding is container dependent. Default is
 	 * ISO-8859-1.
-	 * 
+	 *
 	 * @see javax.servlet.ServletResponse#setLocale(java.util.Locale)
-	 * 
+	 *
 	 * @param locale
 	 *            The locale use for mapping the character encoding
 	 */
@@ -381,7 +419,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Writes string to response output.
-	 * 
+	 *
 	 * @param string
 	 *            The string to write
 	 */
@@ -421,7 +459,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Writes AppendingStringBuffer to response output.
-	 * 
+	 *
 	 * @param asb
 	 *            The AppendingStringBuffer to write to the stream
 	 */
@@ -439,7 +477,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Set a header to the date value in the servlet response stream.
-	 * 
+	 *
 	 * @param header
 	 * @param date
 	 */
@@ -454,7 +492,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Set a header to the string value in the servlet response stream.
-	 * 
+	 *
 	 * @param header
 	 * @param value
 	 */
@@ -470,7 +508,7 @@ public class WebResponse extends Response
 	 * Convenience method for setting the content-disposition:attachment header. This header is used
 	 * if the response should prompt the user to download it as a file instead of opening in a
 	 * browser.
-	 * 
+	 *
 	 * @param filename
 	 *            file name of the attachment
 	 */
@@ -482,7 +520,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Is the request, which matches this response an ajax request.
-	 * 
+	 *
 	 * @return True if the request is an ajax request.
 	 */
 	public boolean isAjax()
@@ -492,7 +530,7 @@ public class WebResponse extends Response
 
 	/**
 	 * Set that the request which matches this response is an ajax request.
-	 * 
+	 *
 	 * @param ajax
 	 *            True if the request is an ajax request.
 	 */

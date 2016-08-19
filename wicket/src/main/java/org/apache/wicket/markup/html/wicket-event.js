@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /*
- * Wicket Ajax Support 
+ * Wicket Ajax Support
  *
  * @author Igor Vaynberg
- * @author Matej Knopp 
+ * @author Matej Knopp
  */
 
 if (Function.prototype.bind == null) {
@@ -43,40 +43,40 @@ if (typeof(Wicket) == "undefined")
  * Browser types
  */
 if (typeof(Wicket.Browser) == "undefined") {
-	Wicket.Browser = { 
+	Wicket.Browser = {
 		isKHTML: function() {
 			return /Konqueror|KHTML/.test(navigator.userAgent) && !/Apple/.test(navigator.userAgent);
 		},
-		
+
 		isSafari: function() {
-			return /KHTML/.test(navigator.userAgent) && /Apple/.test(navigator.userAgent);
+			return /KHTML/.test(navigator.userAgent) && /Apple/.test(navigator.userAgent) && !/Edge/.test(navigator.userAgent);
 		},
-		
+
 		isOpera: function() {
 			return !Wicket.Browser.isSafari() && typeof(window.opera) != "undefined";
 		},
-	
+
 		isIE: function() {
 			return !Wicket.Browser.isSafari() && typeof(document.all) != "undefined" && typeof(window.opera) == "undefined";
 		},
-		
+
 		isIEQuirks: function() {
-			// is the browser internet explorer in quirks mode (we could use document.compatMode too)		
+			// is the browser internet explorer in quirks mode (we could use document.compatMode too)
 			return Wicket.Browser.isIE() && document.documentElement.clientHeight == 0;
-		},		
-		
+		},
+
 		isIELessThan7: function() {
 			var index = navigator.userAgent.indexOf("MSIE");
 			var version = parseFloat(navigator.userAgent.substring(index + 5));
 			return Wicket.Browser.isIE() && version < 7;
 		},
-		
+
 		isIE7: function() {
 			var index = navigator.userAgent.indexOf("MSIE");
 			var version = parseFloat(navigator.userAgent.substring(index + 5));
 			return Wicket.Browser.isIE() && version >= 7;
 		},
-		
+
 		isGecko: function() {
 			return /Gecko/.test(navigator.userAgent) && !Wicket.Browser.isSafari();
 		}
@@ -94,7 +94,7 @@ if (typeof(Wicket.Browser) == "undefined") {
 if (typeof(Wicket.Event) == "undefined") {
 	Wicket.Event = {
 		idCounter: 0,
-		
+
 		getId: function(element) {
 			var current = element.getAttribute("id");
 			if (typeof(current) == "string" && current.length > 0) {
@@ -105,14 +105,14 @@ if (typeof(Wicket.Event) == "undefined") {
 				return current;
 			}
 		},
-		
+
 		handler: function() {
 			var id = this[0];
 			var original = this[1];
 			var element = Wicket.$(id);
 			original.bind(element)();
 		},
-	
+
 		fire: function(element, event) {
 			if (document.createEvent) {
 				var e=document.createEvent("Event");
@@ -122,7 +122,7 @@ if (typeof(Wicket.Event) == "undefined") {
 				return element.fireEvent("on"+event);
 			}
 		},
-		
+
 		// adds an event of specified type to the element
 		// also supports the domready event on window
 		// domready is event fired when the DOM is complete, but before loading external resources (images, ...)
@@ -138,8 +138,8 @@ if (typeof(Wicket.Event) == "undefined") {
 						fn = fn.bind(element);
 					}
 					else {
-						fn = Wicket.Event.handler.bind([Wicket.Event.getId(element), fn]);					
-					}				
+						fn = Wicket.Event.handler.bind([Wicket.Event.getId(element), fn]);
+					}
 					// Because of the fn.bind (returning a new function object)
 					// you can't detach the event first to be sure that there are no doubles :(
 					//element.detachEvent('on'+type, fn);
@@ -148,10 +148,10 @@ if (typeof(Wicket.Event) == "undefined") {
 			}
 			return element;
 		},
-		
+
 		// handlers that will be fired on dom ready event
 		domReadyHandlers : new Array(),
-		
+
 		// fires the dom ready event and cleanup the handlers
 		fireDomReadyHandlers : function() {
 			var h = Wicket.Event.domReadyHandlers;
@@ -161,8 +161,8 @@ if (typeof(Wicket.Event) == "undefined") {
 			}
 			Wicket.Event.domReadyHandlers = null;
 		},
-		
-		// adds the dom ready event 
+
+		// adds the dom ready event
 		addDomReadyEvent : function(fn) {
 			// is the window already loaded?
 			if (window.loaded)  {
@@ -170,18 +170,18 @@ if (typeof(Wicket.Event) == "undefined") {
 			} else if (!window.events || !window.events.domready) {
 				// register the handler
 				Wicket.Event.domReadyHandlers.push(fn);
-			
+
 				// callback
 				var domReady = function() {
-					if (window.loaded) 
+					if (window.loaded)
 						return;
 					window.loaded = true;
-					
+
 					// invoke the handlers
 					Wicket.Event.fireDomReadyHandlers();
 				}.bind(this);
-				
-				if (document.readyState && (Wicket.Browser.isKHTML() || Wicket.Browser.isSafari())) { 
+
+				if (document.readyState && (Wicket.Browser.isKHTML() || Wicket.Browser.isSafari())) {
 				  //safari and konqueror don't support the event - simulate it through a timeout
 					var domCheck = function() {
 						if (document.readyState == "loaded" ||
@@ -193,9 +193,9 @@ if (typeof(Wicket.Event) == "undefined") {
 						}
 					}
 					window.setTimeout(domCheck, 10);
-				} else if (document.readyState && Wicket.Browser.isIE()) { 
+				} else if (document.readyState && Wicket.Browser.isIE()) {
 					if (document.getElementById('ie_ready') == null) {
-						// for internet explorer we need to load a "dummy" scrip from ::/ to get the 
+						// for internet explorer we need to load a "dummy" scrip from ::/ to get the
 						// readystatechangeevernt - that means the main page being loaded and now the browser
 						// is loading dependencies
 						var src = (window.location.protocol == 'https:') ? '\/\/:' : 'javascript:void(0)';
@@ -204,7 +204,7 @@ if (typeof(Wicket.Event) == "undefined") {
 							if (this.readyState == 'complete') domReady();
 						};
 					}
-				} else { 
+				} else {
 					// other browsers
 					Wicket.Event.add(document, "DOMContentLoaded", domReady);
 				}
