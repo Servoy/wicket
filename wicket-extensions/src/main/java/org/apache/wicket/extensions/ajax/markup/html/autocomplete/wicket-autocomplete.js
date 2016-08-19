@@ -154,7 +154,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
                    	} else {
 	                    render(true, false);
         	        }
-            	    if(Wicket.Browser.isSafari())return killEvent(event);
+            	    if(Wicket.Browser.isSafari() || Wicket.Browser.isGecko())return killEvent(event);
                 	break;
                 case KEY_DOWN:
                		if(selected<elementCount-1){
@@ -166,7 +166,7 @@ Wicket.AutoComplete=function(elementId, callbackUrl, cfg, indicatorId){
                 	    render(true, false);
                     	showAutoComplete();
 	                }
-    	            if(Wicket.Browser.isSafari())return killEvent(event);
+    	            if(Wicket.Browser.isSafari() || Wicket.Browser.isGecko())return killEvent(event);
         	        break;
                 case KEY_ESC:
                     if (visible==1) {
