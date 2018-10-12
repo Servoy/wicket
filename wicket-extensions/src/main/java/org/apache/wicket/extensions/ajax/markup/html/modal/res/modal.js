@@ -627,14 +627,7 @@ Wicket.Window.prototype = {
 			this.content.contentWindow.name = this.settings.iframeName;
 		}
 		
-		try
-		{
-			this.content.contentWindow.location.replace(this.settings.src);
-		}
-		catch(ignore)
-		{
-			this.content.src = this.settings.src;
-		}		
+		this.content.src = this.settings.src;
 	},
 	
 	/**
